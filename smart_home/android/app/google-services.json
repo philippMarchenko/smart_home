@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "19218219107",
+    "firebase_url": "https://smart-home-c4ea7.firebaseio.com",
+    "project_id": "smart-home-c4ea7",
+    "storage_bucket": "smart-home-c4ea7.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:19218219107:android:72ff1602d2306ef4163856",
+        "android_client_info": {
+          "package_name": "com.dev.philipp.marchenko.smart_home"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "19218219107-jrfab1tu1h1fsjom3b7kd8tqsd9jmpbe.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZrwWg68lVMREH5pZoAYmhuzdTuxI07cY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "19218219107-jrfab1tu1h1fsjom3b7kd8tqsd9jmpbe.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
