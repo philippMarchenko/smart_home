@@ -1,5 +1,3 @@
-import 'dart:developer';
-import 'dart:io';
 import 'dart:math';
 
 import 'package:firebase_core/firebase_core.dart';
@@ -9,30 +7,19 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:mp_chart/mp/chart/line_chart.dart';
 import 'package:mp_chart/mp/controller/line_chart_controller.dart';
-import 'package:mp_chart/mp/core/adapter_android_mp.dart';
 import 'package:mp_chart/mp/core/data/line_data.dart';
 import 'package:mp_chart/mp/core/data_interfaces/i_line_data_set.dart';
 import 'package:mp_chart/mp/core/data_set/line_data_set.dart';
 import 'package:mp_chart/mp/core/description.dart';
 import 'package:mp_chart/mp/core/entry/entry.dart';
-import 'package:mp_chart/mp/core/enums/legend_form.dart';
-import 'package:mp_chart/mp/core/enums/limit_label_postion.dart';
 import 'package:mp_chart/mp/core/highlight/highlight.dart';
-import 'package:mp_chart/mp/core/limit_line.dart';
-import 'package:mp_chart/mp/core/marker/i_marker.dart';
-import 'package:mp_chart/mp/core/marker/i_marker.dart';
-import 'package:mp_chart/mp/core/marker/i_marker.dart';
-import 'package:mp_chart/mp/core/marker/i_marker.dart';
-import 'package:mp_chart/mp/core/marker/i_marker.dart';
-import 'package:mp_chart/mp/core/marker/i_marker.dart';
 import 'package:mp_chart/mp/core/marker/line_chart_marker.dart';
 import 'package:mp_chart/mp/core/poolable/point.dart';
 import 'package:mp_chart/mp/core/utils/color_utils.dart';
 import 'package:mp_chart/mp/core/utils/painter_utils.dart';
 import 'package:mp_chart/mp/core/value_formatter/value_formatter.dart';
-import 'package:mp_chart/mp/core/marker/i_marker.dart';
-import 'package:mp_chart/mp/core/view_port.dart';
 import 'package:smart_home/main_card.dart';
+import 'package:smart_home/theme.dart';
 
 import 'SecondaryCard.dart';
 
@@ -129,7 +116,17 @@ class _MyHomePageState extends State<MyHomePage> {
         .child("TemperatureWater")
         .limitToLast(1);
 
-    _temperatureStreetQuery.once().then((DataSnapshot snapshot) {
+
+    loadDataFromFirebase();
+
+
+    _initController();
+
+  }
+
+
+  Future loadDataFromFirebase() async{
+    await _temperatureStreetQuery.once().then((DataSnapshot snapshot) {
       Map<dynamic, dynamic> values = snapshot.value;
       print("_temperatureStreetQuery size " + values.length.toString());
       print("last time " + values.keys.toList().first.toString());
@@ -148,35 +145,33 @@ class _MyHomePageState extends State<MyHomePage> {
 
     });
 
-    _temperatureWaterQuery.once().then((DataSnapshot snapshot) {
-      Map<dynamic, dynamic> values = snapshot.value;
-      print("_temperatureWaterQuery size " + values.length.toString());
+    await _temperatureWaterQuery.once().then((DataSnapshot snapshot) {
+      try{
+        Map<dynamic, dynamic> values = snapshot.value;
+        print("_temperatureWaterQuery size " + values.length.toString());
 
-      print("last time " + values.keys.toList().first.toString());
+        print("last time " + values.keys.toList().first.toString());
 
-      setState(() {
+        setState(() {
 
-        values.values.toList().forEach((element) {
-          print("_temperatureWaterQuery element " + element.toString());
+          values.values.toList().forEach((element) {
+            print("_temperatureWaterQuery element " + element.toString());
 
-          if(element is double){
-            setState(() {
-              print("last temp " + element.toString());
-              _temperatureWater = element;
-            });
-          }
+            if(element is double){
+              setState(() {
+                print("last temp " + element.toString());
+                _temperatureWater = element;
+              });
+            }
+          });
         });
+      }catch(e){
+        print("_temperatureWaterQuery error " + e.toString());
+      }
 
-        var date = DateTime.fromMillisecondsSinceEpoch(
-            int.parse(values.keys.toList().last) * 1000,
-            isUtc: true);
-
-        String formattedDate = DateFormat('yyyy-MM-dd HH:mm').format(date);
-        _time = formattedDate;
-      });
     });
 
-    _temperatureStreetArrayQuery.once().then((DataSnapshot snapshot) {
+    await _temperatureStreetArrayQuery.once().then((DataSnapshot snapshot) {
       Map<dynamic, dynamic> values = snapshot.value;
 
       setState(() {
@@ -197,85 +192,104 @@ class _MyHomePageState extends State<MyHomePage> {
         _maxValueTemperatureStreetTime = timestampToDateTime(int.parse(timestampMaxTemp));
         _minValueTemperatureStreetTime = timestampToDateTime(int.parse(timestampMinTemp));
 
+
+        var date = DateTime.fromMillisecondsSinceEpoch(
+            int.parse(values.keys.toList().last) * 1000,
+            isUtc: true);
+
+        String formattedDate = DateFormat('yyyy-MM-dd HH:mm').format(date);
+        _time = formattedDate;
+
         _initLineData(values);
       });
-
     });
+  }
 
-    _initController();
-
+  Future<void> _pullRefresh() async {
+    await loadDataFromFirebase();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return MaterialApp(
+      theme: ThemeProvider().theme,
+      home: Scaffold(
 
-      backgroundColor: Colors.blue,
-      body: Container(
-          constraints: BoxConstraints.expand(),
-              child: Column(
-                children: [
-                  Container(
-                        margin: EdgeInsets.only(top: 10.0),
-                        height: MediaQuery.of(context).size.height / 2,
-                        width: MediaQuery.of(context).size.width * 1,
-                        child: _initLineChart(),
-                      ),
-
-                  Container(
-                    margin: EdgeInsets.only(bottom: 75.0,left: 18,right: 18),
-                        child: Column(
-                          children: [
-                            Row(
-                            children: [
-                              MainCard(_temperatureWater.toStringAsFixed(2),"Temperature Water"),
-                              MainCard(_temperatureStreet.toStringAsFixed(2),"Temperature Street"),
-                            ],
-                          ),
-                            Row(
-                              children: [
-                                SecondaryCard(_minValueTemperatureStreet.toStringAsFixed(2),"Minimum Temperature Street",_minValueTemperatureStreetTime),
-                                SecondaryCard(_maxValueTemperatureStreet.toStringAsFixed(2),"Maximum Temperature Street",_maxValueTemperatureStreetTime),
-                              ],
+        backgroundColor: Colors.blue,
+        body: RefreshIndicator(
+          color: Colors.blue,
+          backgroundColor: Colors.white,
+          onRefresh: _pullRefresh,
+          child: SingleChildScrollView(
+            physics: AlwaysScrollableScrollPhysics(),
+            child: Container(
+                    child: Column(
+                      children: [
+                        AppBar(title: Text("SmartHome")),
+                        Container(
+                              margin: EdgeInsets.only(top: 10.0),
+                              height: MediaQuery.of(context).size.height / 2.1,
+                              width: MediaQuery.of(context).size.width * 1,
+                              child: _initLineChart(),
                             ),
-                          ],
-                        ),
 
-                  ),
-                  Container(
-                      alignment: Alignment.bottomRight,
-
-                      margin: EdgeInsets.only(bottom: 15.0,right: 18),
-                      child: Row(
-                          mainAxisSize: MainAxisSize.min,
-
-                          children:[
-                            Container(
-                              child: Text(
-                                'Last time at updated    ',
-                                style: TextStyle(
-                                    color: Colors.black87,
-                                    fontSize: 12.0,
-                                    fontWeight: FontWeight.normal
+                        Container(
+                          margin: EdgeInsets.only(left: 18,right: 18),
+                              child: Column(
+                                children: [
+                                  Row(
+                                  children: [
+                                    MainCard(_temperatureWater.toStringAsFixed(2),"Temperature Water"),
+                                    MainCard(_temperatureStreet.toStringAsFixed(2),"Temperature Street"),
+                                  ],
                                 ),
-                              ),
-                            ),
-                            Container(
-                                child: Text(
-                                  '$_time',
-                                  style: TextStyle(
-                                      color: Colors.white54,
-                                      fontSize: 18.0,
-                                      fontWeight: FontWeight.normal
+                                  Row(
+                                    children: [
+                                      SecondaryCard(_minValueTemperatureStreet.toStringAsFixed(2),"Minimum Temperature Street",_minValueTemperatureStreetTime),
+                                      SecondaryCard(_maxValueTemperatureStreet.toStringAsFixed(2),"Maximum Temperature Street",_maxValueTemperatureStreetTime),
+                                    ],
                                   ),
-                                ),
+                                ],
+                              ),
+
+                        ),
+                        Container(
+                            alignment: Alignment.bottomRight,
+
+                            margin: EdgeInsets.only(top: 12.0,bottom: 15.0,right: 18),
+                            child: Row(
+                                mainAxisSize: MainAxisSize.min,
+
+                                children:[
+                                  Container(
+                                    child: Text(
+                                      'Last time at updated    ',
+                                      style: TextStyle(
+                                          color: Colors.black87,
+                                          fontSize: 12.0,
+                                          fontWeight: FontWeight.normal
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                      child: Text(
+                                        '$_time',
+                                        style: TextStyle(
+                                            color: Colors.white54,
+                                            fontSize: 18.0,
+                                            fontWeight: FontWeight.normal
+                                        ),
+                                      ),
+                                  )
+                                ]
                             )
-                          ]
-                      )
-                  )
-                ],
+                        )
+                      ],
+                    ),
               ),
+          ),
         )
+      ),
     );
   }
 
@@ -291,9 +305,9 @@ class _MyHomePageState extends State<MyHomePage> {
     controller = LineChartController(
         axisRightSettingFunction: (axisRight, controller) {
           axisRight.enabled = false;
-
         },
         legendSettingFunction: (legend, controller) {
+          legend.enabled = false;
         },
         xAxisSettingFunction: (xAxis, controller) {
           xAxis.enabled = false;
@@ -303,6 +317,7 @@ class _MyHomePageState extends State<MyHomePage> {
             ..setAxisMaximum(_maxValueTemperatureStreet + 5.0)
             ..setAxisMinimum(_minValueTemperatureStreet + -5.0);
         },
+
         drawGridBackground: false,
         backgroundColor: Colors.transparent,
         gridBackColor: Colors.transparent,
@@ -346,7 +361,7 @@ class _MyHomePageState extends State<MyHomePage> {
     set1.setDrawCircles(false);
     set1.setFormLineWidth(3);
     set1.setValueTextSize(0);
-
+    set1.setLabel("");
     List<ILineDataSet> dataSets = List();
     dataSets.add(set1);
     controller.data = LineData.fromList(dataSets);
